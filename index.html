@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Salary Breakdown</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Syne:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #141414;
+        --surface: #1c1c1c;
+        --border: #2a2a2a;
+        --border2: #333;
+        --gold: #c9a84c;
+        --gold-dim: #8a6e2f;
+        --text: #e8e4dc;
+        --muted: #6b6860;
+        --dim: #3a3a38;
+        --green: #4caf82;
+        --red: #cf6679;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Syne", sans-serif;
+        min-height: 100vh;
+        padding: 48px 20px;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* Grain overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.6;
+      }
+
+      .page {
+        width: 100%;
+        max-width: 620px;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Masthead */
+      .masthead {
+        border-top: 2px solid var(--gold);
+        padding-top: 20px;
+        margin-bottom: 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .masthead-title {
+        font-family: "Playfair Display", serif;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.01em;
+      }
+      .masthead-title em {
+        font-style: italic;
+        color: var(--gold);
+      }
+      .masthead-tag {
+        font-size: 10px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-top: 4px;
+      }
+      .issue-badge {
+        font-family: "DM Mono", monospace;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: right;
+        line-height: 1.6;
+      }
+
+      /* Input block */
+      .input-block {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 28px;
+        margin-bottom: 16px;
+        animation: fadeUp 0.4s ease both;
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .block-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 20px;
+      }
+
+      .input-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .input-grid.full {
+        grid-template-columns: 1fr;
+      }
+
+      .field label {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        background: var(--bg);
+        transition: border-color 0.15s;
+      }
+      .input-wrap:focus-within {
+        border-color: var(--gold);
+      }
+
+      .input-prefix {
+        padding: 0 10px 0 14px;
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        color: var(--muted);
+        user-select: none;
+        white-space: nowrap;
+      }
+
+      .input-wrap input,
+      .input-wrap select {
+        flex: 1;
+        padding: 11px 14px 11px 4px;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: "DM Mono", monospace;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--text);
+        width: 100%;
+        -webkit-appearance: none;
+      }
+      .input-wrap select {
+        padding-left: 14px;
+        cursor: pointer;
+      }
+      .input-wrap input::placeholder {
+        color: var(--dim);
+      }
+
+      /* Range slider */
+      .slider-field {
+        margin-top: 4px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        height: 2px;
+        background: var(--border2);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--gold);
+        cursor: pointer;
+        transition: transform 0.1s;
+      }
+      .slider-row input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.3);
+      }
+      .slider-val {
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        color: var(--gold);
+        min-width: 32px;
+        text-align: right;
+      }
+
+      /* Divider */
+      .rule {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 20px 0;
+      }
+
+      /* Results block */
+      .results-block {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        animation: fadeUp 0.4s 0.1s ease both;
+      }
+
+      .results-header {
+        padding: 20px 28px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .results-header-label {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .results-header-salary {
+        font-family: "DM Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      /* Hero number */
+      .hero-row {
+        padding: 28px 28px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+      .hero-label {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .hero-number {
+        font-family: "Playfair Display", serif;
+        font-size: 52px;
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+      .hero-unit {
+        font-family: "Syne", sans-serif;
+        font-size: 14px;
+        color: var(--muted);
+        margin-left: 6px;
+      }
+      .hero-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .hero-right {
+        text-align: right;
+      }
+      .per-minute-label {
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .per-minute-val {
+        font-family: "DM Mono", monospace;
+        font-size: 18px;
+        color: var(--text);
+      }
+
+      /* Grid breakdown */
+      .breakdown-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+      }
+      .bd-cell {
+        padding: 18px 24px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+      }
+      .bd-cell:nth-child(even) {
+        border-right: none;
+      }
+      .bd-cell:nth-last-child(-n + 2) {
+        border-bottom: none;
+      }
+      .bd-cell:hover {
+        background: rgba(201, 168, 76, 0.04);
+      }
+
+      .bd-label {
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .bd-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--gold-dim);
+        flex-shrink: 0;
+      }
+      .bd-value {
+        font-family: "DM Mono", monospace;
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .bd-sub {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 3px;
+      }
+
+      /* Insight bar */
+      .insight-bar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 20px 24px;
+        margin-top: 16px;
+        animation: fadeUp 0.4s 0.2s ease both;
+      }
+      .insight-title {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 14px;
+      }
+      .insight-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .insight-item {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .insight-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .insight-item strong {
+        font-family: "DM Mono", monospace;
+        font-weight: 500;
+        color: var(--text);
+        font-size: 14px;
+      }
+
+      /* Dynamic rows */
+      .dyn-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+        animation: fadeUp 0.2s ease both;
+      }
+      .dyn-input-wrap {
+        display: flex;
+        align-items: center;
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        transition: border-color 0.15s;
+      }
+      .dyn-input-wrap:focus-within {
+        border-color: var(--gold-dim);
+      }
+      .dyn-prefix {
+        padding: 0 8px 0 10px;
+        font-family: "DM Mono", monospace;
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .dyn-input-wrap input[type="text"] {
+        flex: 1;
+        padding: 8px 4px;
+        background: transparent;
+        border: none;
+        outline: none;
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        color: var(--text);
+        width: 80px;
+      }
+      .dyn-input-wrap input[type="text"]::placeholder {
+        color: var(--dim);
+      }
+      .dyn-label-input {
+        flex: 1;
+        padding: 8px 10px;
+        background: var(--bg);
+        border: 1px solid var(--border2);
+        border-radius: 3px;
+        outline: none;
+        font-family: "Syne", sans-serif;
+        font-size: 12px;
+        color: var(--muted);
+        width: 100%;
+        transition: border-color 0.15s;
+      }
+      .dyn-label-input:focus {
+        border-color: var(--gold-dim);
+        color: var(--text);
+      }
+      .dyn-label-input::placeholder {
+        color: var(--dim);
+      }
+      .dyn-result {
+        font-family: "DM Mono", monospace;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--gold);
+        white-space: nowrap;
+        min-width: 80px;
+        text-align: right;
+      }
+      .dyn-delete {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 0 2px;
+        line-height: 1;
+        transition: color 0.15s;
+      }
+      .dyn-delete:hover {
+        color: var(--red);
+      }
+      #addRowBtn {
+        margin-top: 4px;
+        background: none;
+        border: 1px dashed var(--border2);
+        border-radius: 3px;
+        color: var(--muted);
+        font-family: "Syne", sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        padding: 7px 14px;
+        cursor: pointer;
+        width: 100%;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      #addRowBtn:hover {
+        border-color: var(--gold-dim);
+        color: var(--gold);
+      }
+      .num-animate {
+        transition: opacity 0.2s;
+      }
+      .num-animate.updating {
+        opacity: 0.3;
+      }
+
+      /* Footer */
+      .footer {
+        margin-top: 32px;
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Masthead -->
+      <div class="masthead">
+        <div>
+          <h1 class="masthead-title">Salary<br /><em>Breakdown</em></h1>
+          <p class="masthead-tag">Nilai Waktu Anda</p>
+        </div>
+        <div class="issue-badge">
+          <span id="todayLabel">—</span><br />
+          Personal Finance Tool
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="input-block">
+        <p class="block-eyebrow">Input Gaji</p>
+
+        <div class="input-grid">
+          <div class="field">
+            <label>Gaji Kotor</label>
+            <div class="input-wrap">
+              <span class="input-prefix">Rp</span>
+              <input
+                type="text"
+                id="salaryInput"
+                value="10.000.000"
+                inputmode="numeric"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div class="field">
+            <label>Periode</label>
+            <div class="input-wrap">
+              <select id="periodSelect">
+                <option value="monthly" selected>Per Bulan</option>
+                <option value="weekly">Per Minggu</option>
+                <option value="annual">Per Tahun</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <hr class="rule" />
+
+        <div class="input-grid">
+          <div class="field">
+            <label>Jam Kerja / Hari</label>
+            <div class="input-wrap">
+              <input
+                type="number"
+                id="hoursPerDay"
+                value="8"
+                min="1"
+                max="24"
+              />
+              <span class="input-prefix">jam</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Hari Kerja / Minggu</label>
+            <div class="input-wrap">
+              <input type="number" id="daysPerWeek" value="5" min="1" max="7" />
+              <span class="input-prefix">hari</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="rule" />
+
+        <div class="field slider-field">
+          <label>Pajak / Potongan</label>
+          <div class="slider-row">
+            <input
+              type="range"
+              id="taxSlider"
+              min="0"
+              max="40"
+              value="5"
+              step="1"
+            />
+            <span class="slider-val" id="taxVal">5%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-block" id="resultsBlock">
+        <div class="results-header">
+          <span class="results-header-label">Breakdown Waktu</span>
+          <span class="results-header-salary" id="annualLabel">—</span>
+        </div>
+
+        <!-- Hero: per hour -->
+        <div class="hero-row">
+          <div>
+            <p class="hero-label">Nilai Per Jam (Bersih)</p>
+            <div>
+              <span class="hero-number num-animate" id="perHour">—</span>
+              <span class="hero-unit">/ jam</span>
+            </div>
+            <p class="hero-sub" id="perHourGross">Kotor: —</p>
+          </div>
+          <div class="hero-right">
+            <p class="per-minute-label">Per Menit</p>
+            <p class="per-minute-val num-animate" id="perMinute">—</p>
+            <p class="per-minute-label" style="margin-top: 10px">Per Detik</p>
+            <p class="per-minute-val num-animate" id="perSecond">—</p>
+          </div>
+        </div>
+
+        <!-- Grid breakdown -->
+        <div class="breakdown-grid">
+          <div class="bd-cell">
+            <div class="bd-label"><span class="bd-dot"></span>Per Hari</div>
+            <div class="bd-value num-animate" id="perDay">—</div>
+            <div class="bd-sub" id="perDaySub">— jam kerja</div>
+          </div>
+          <div class="bd-cell">
+            <div class="bd-label"><span class="bd-dot"></span>Per Minggu</div>
+            <div class="bd-value num-animate" id="perWeek">—</div>
+            <div class="bd-sub" id="perWeekSub">— hari kerja</div>
+          </div>
+          <div class="bd-cell">
+            <div class="bd-label"><span class="bd-dot"></span>Per Bulan</div>
+            <div class="bd-value num-animate" id="perMonth">—</div>
+            <div class="bd-sub" id="perMonthSub">— jam/bulan</div>
+          </div>
+          <div class="bd-cell">
+            <div class="bd-label"><span class="bd-dot"></span>Per Tahun</div>
+            <div class="bd-value num-animate" id="perYear">—</div>
+            <div class="bd-sub" id="perYearSub">— jam/tahun</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insight -->
+      <div class="insight-bar">
+        <p class="insight-title">Perspektif Waktu</p>
+        <div class="insight-list" id="insightList">
+          <!-- filled by JS -->
+        </div>
+
+        <!-- Dynamic rows -->
+        <div
+          style="
+            margin-top: 18px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+          "
+        >
+          <p
+            style="
+              font-size: 10px;
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+              color: var(--gold);
+              margin-bottom: 12px;
+            "
+          >
+            Hitung Harga Sendiri
+          </p>
+          <div id="dynamicRows">
+            <!-- rows injected by JS -->
+          </div>
+          <button id="addRowBtn" onclick="addDynamicRow()">
+            <span>+</span> Tambah Item
+          </button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span>Semua kalkulasi real-time</span>
+        <span>Nilai bersih setelah potongan</span>
+      </div>
+    </div>
+
+    <script>
+      // ── date ──────────────────────────────────────────────────────────────────
+      const MONTHS = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+      ];
+      const now = new Date();
+      document.getElementById("todayLabel").textContent =
+        `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+
+      // ── format ────────────────────────────────────────────────────────────────
+      function fmt(n, decimals = 0) {
+        if (n === null || isNaN(n)) return "—";
+        return new Intl.NumberFormat("id-ID", {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        }).format(n);
+      }
+      function fmtRp(n, decimals = 0) {
+        if (n === null || isNaN(n)) return "—";
+        if (n >= 1_000_000) return `${fmt(n / 1_000_000, 2)}jt`;
+        if (n >= 1_000) return `${fmt(n / 1_000, 1)}rb`;
+        return fmt(n, decimals);
+      }
+      function fmtFull(n) {
+        if (isNaN(n)) return "—";
+        return "Rp " + fmt(n);
+      }
+
+      // ── parse input with dots ─────────────────────────────────────────────────
+      function parseSalary(str) {
+        return parseFloat(str.replace(/\./g, "").replace(",", ".")) || 0;
+      }
+
+      // ── salary input: auto-format with dots ───────────────────────────────────
+      const salaryInput = document.getElementById("salaryInput");
+      salaryInput.addEventListener("input", () => {
+        let raw = salaryInput.value.replace(/\D/g, "");
+        if (raw) {
+          salaryInput.value = new Intl.NumberFormat("id-ID").format(
+            parseInt(raw),
+          );
+        }
+        calc();
+      });
+
+      // ── slider ────────────────────────────────────────────────────────────────
+      const taxSlider = document.getElementById("taxSlider");
+      const taxVal = document.getElementById("taxVal");
+      taxSlider.addEventListener("input", () => {
+        taxVal.textContent = taxSlider.value + "%";
+        calc();
+      });
+
+      // ── other inputs ──────────────────────────────────────────────────────────
+      ["periodSelect", "hoursPerDay", "daysPerWeek"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", calc);
+      });
+
+      // ── animate helper ────────────────────────────────────────────────────────
+      function setVal(id, val) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.add("updating");
+        setTimeout(() => {
+          el.textContent = val;
+          el.classList.remove("updating");
+        }, 80);
+      }
+
+      // ── main calc ─────────────────────────────────────────────────────────────
+      function calc() {
+        const rawSalary = parseSalary(salaryInput.value);
+        const period = document.getElementById("periodSelect").value;
+        const hoursPerDay = Math.max(
+          1,
+          parseFloat(document.getElementById("hoursPerDay").value) || 8,
+        );
+        const daysPerWeek = Math.max(
+          1,
+          parseFloat(document.getElementById("daysPerWeek").value) || 5,
+        );
+        const taxPct = parseFloat(taxSlider.value) / 100;
+
+        if (!rawSalary) return;
+
+        // Normalize to monthly gross
+        let monthlyGross;
+        if (period === "monthly") monthlyGross = rawSalary;
+        else if (period === "annual") monthlyGross = rawSalary / 12;
+        else if (period === "weekly") monthlyGross = rawSalary * 4.33;
+
+        const annualGross = monthlyGross * 12;
+        const annualNet = annualGross * (1 - taxPct);
+        const monthlyNet = annualNet / 12;
+
+        const weeksPerYear = 52;
+        const workDaysYear = daysPerWeek * weeksPerYear;
+        const workHoursYear = workDaysYear * hoursPerDay;
+        const workDaysMo = daysPerWeek * 4.33;
+        const workHoursMo = workDaysMo * hoursPerDay;
+        const workHoursWeek = daysPerWeek * hoursPerDay;
+
+        const perHourNet = annualNet / workHoursYear;
+        const perHourGross = annualGross / workHoursYear;
+        const perMinNet = perHourNet / 60;
+        const perSecNet = perMinNet / 60;
+        const perDayNet = perHourNet * hoursPerDay;
+        const perWeekNet = perHourNet * workHoursWeek;
+        const perYearNet = annualNet;
+
+        // Annual label
+        document.getElementById("annualLabel").textContent =
+          `Gaji Tahunan: Rp ${fmt(annualGross)}`;
+
+        // Hero
+        setVal("perHour", "Rp " + fmt(perHourNet));
+        document.getElementById("perHourGross").textContent =
+          `Kotor: Rp ${fmt(perHourGross)}`;
+        setVal("perMinute", "Rp " + fmt(perMinNet, 0));
+        setVal("perSecond", "Rp " + fmt(perSecNet, 1));
+
+        // Grid
+        setVal("perDay", "Rp " + fmtRp(perDayNet));
+        document.getElementById("perDaySub").textContent =
+          `${hoursPerDay} jam kerja`;
+        setVal("perWeek", "Rp " + fmtRp(perWeekNet));
+        document.getElementById("perWeekSub").textContent =
+          `${daysPerWeek} hari kerja`;
+        setVal("perMonth", "Rp " + fmtRp(monthlyNet));
+        document.getElementById("perMonthSub").textContent =
+          `${fmt(workHoursMo, 0)} jam/bulan`;
+        setVal("perYear", "Rp " + fmtRp(perYearNet));
+        document.getElementById("perYearSub").textContent =
+          `${fmt(workHoursYear, 0)} jam/tahun`;
+
+        // Fixed insights
+        const fixedItems = [
+          { label: "Makanan kucing (Rp40rb)", price: 40_000 },
+          { label: "Bensin seminggu (Rp30rb)", price: 30_000 },
+          { label: "Bayar kos per bulan (Rp200rb)", price: 200_000 },
+        ];
+
+        const insightList = document.getElementById("insightList");
+        insightList.innerHTML = fixedItems
+          .map(
+            (i) => `
+      <div class="insight-item">
+        <span>${i.label} = bekerja selama</span>
+        <strong>${secToHuman(i.price / perSecNet)}</strong>
+      </div>`,
+          )
+          .join("");
+
+        // Update dynamic rows
+        window._perSecNet = perSecNet;
+        updateDynamicResults();
+      }
+
+      // ── dynamic rows ──────────────────────────────────────────────────────────
+      let dynRowId = 0;
+
+      function addDynamicRow(labelVal = "", priceVal = "") {
+        dynRowId++;
+        const id = dynRowId;
+        const container = document.getElementById("dynamicRows");
+        const div = document.createElement("div");
+        div.className = "dyn-row";
+        div.id = `dyn-${id}`;
+        div.innerHTML = `
+      <input class="dyn-label-input" type="text" placeholder="Nama item…"
+             value="${labelVal}" oninput="updateDynamicResults()">
+      <div class="dyn-input-wrap">
+        <span class="dyn-prefix">Rp</span>
+        <input type="text" inputmode="numeric" placeholder="0"
+               value="${priceVal}" oninput="onDynPrice(this)">
+      </div>
+      <span class="dyn-result" id="dyn-res-${id}">—</span>
+      <button class="dyn-delete" onclick="removeDynRow(${id})" title="Hapus">×</button>`;
+        container.appendChild(div);
+        updateDynamicResults();
+      }
+
+      function onDynPrice(input) {
+        let raw = input.value.replace(/\D/g, "");
+        if (raw)
+          input.value = new Intl.NumberFormat("id-ID").format(parseInt(raw));
+        updateDynamicResults();
+      }
+
+      function removeDynRow(id) {
+        const el = document.getElementById(`dyn-${id}`);
+        if (el) el.remove();
+      }
+
+      function updateDynamicResults() {
+        const perSec = window._perSecNet || 0;
+        document.querySelectorAll(".dyn-row").forEach((row) => {
+          const priceInput = row.querySelector(".dyn-input-wrap input");
+          const resEl = row.querySelector(".dyn-result");
+          if (!priceInput || !resEl) return;
+          const price =
+            parseFloat(priceInput.value.replace(/\./g, "").replace(",", ".")) ||
+            0;
+          resEl.textContent =
+            perSec > 0 && price > 0 ? secToHuman(price / perSec) : "—";
+        });
+      }
+
+      function secToHuman(seconds) {
+        if (seconds < 60) return `${Math.round(seconds)} detik`;
+        if (seconds < 3600) return `${Math.round(seconds / 60)} menit`;
+        const h = Math.floor(seconds / 3600);
+        const m = Math.round((seconds % 3600) / 60);
+        return m > 0 ? `${h}j ${m}m` : `${h} jam`;
+      }
+
+      calc();
+
+      // seed 3 empty dynamic rows after first calc
+      addDynamicRow("", "");
+      addDynamicRow("", "");
+      addDynamicRow("", "");
+    </script>
+  </body>
+</html>
